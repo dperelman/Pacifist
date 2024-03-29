@@ -243,6 +243,95 @@ local dummy_active_defense_item = {
     stack_size = 1
 }
 
+local dummy_unit = {
+    type = "unit",
+    name = "pacifist-dummy-unit",
+    icon = "__base__/graphics/icons/small-biter.png",
+    icon_mipmaps = 4,
+    icon_size = 64,
+    flags = {
+        "hidden",
+        "placeable-player",
+        "placeable-enemy",
+        "placeable-off-grid",
+        "not-repairable",
+        "breaths-air"
+    },
+    attack_parameters = {
+        type = "projectile",
+        cooldown = 1,
+        range = 1,
+        ammo_type = { category = "bullet" },
+        animation = dummy_rotated_sprite,
+    },
+    run_animation = dummy_rotated_sprite,
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0,
+}
+
+local dummy_unit_spawner = {
+    type = "unit-spawner",
+    name = "pacifist-dummy-unit-spawner",
+    icon = "__base__/graphics/icons/biter-spawner.png",
+    icon_mipmaps = 4,
+    icon_size = 64,
+    flags = {
+        "hidden",
+        "placeable-player",
+        "placeable-enemy",
+        "not-repairable"
+    },
+    animations = dummy_rotated_sprite,
+    max_count_of_owned_units = 0,
+    max_friends_around_to_spawn = 0,
+    spawning_cooldown = {0, 0},
+    spawning_radius = 0,
+    spawning_spacing = 0,
+    max_richness_for_spawn_shift = 0,
+    max_spawn_shift = 0,
+    pollution_absorption_absolute = 0,
+    pollution_absorption_proportional = 0,
+    call_for_help_radius = 0,
+    result_units = {
+        {
+            "pacifist-dummy-unit",
+            {
+                {
+                    0,
+                    1
+                }
+            }
+        }
+    }
+}
+
+local dummy_turret = {
+    type = "turret",
+    name = "pacifist-dummy-turret",
+    icon = "__base__/graphics/icons/small-worm.png",
+    icon_mipmaps = 4,
+    icon_size = 64,
+    flags = {
+        "hidden",
+        "placeable-player",
+        "placeable-enemy",
+        "placeable-off-grid",
+        "not-repairable",
+        "breaths-air"
+    },
+    attack_parameters = {
+        type = "projectile",
+        cooldown = 1,
+        range = 1,
+        ammo_type = { category = "bullet" }
+    },
+    folded_animation = dummy_rotated_sprite,
+    call_for_help_radius = 0
+}
+
 local dummies = {
     dummy_gun,
     dummy_ammo,
@@ -253,7 +342,10 @@ local dummies = {
     dummy_fluid_turret,
     dummy_artillery_wagon,
     dummy_active_defense_equipment,
-    dummy_active_defense_item
+    dummy_active_defense_item,
+    dummy_unit,
+    dummy_unit_spawner,
+    dummy_turret,
 }
 
 if PacifistMod.settings.remove_walls then
