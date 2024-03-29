@@ -243,6 +243,35 @@ function PacifistMod.remove_misc()
     end
 end
 
+-- Hide all corpses without references; assume they are unreferenced
+-- because a previous pass removed the entity referencing them.
+-- Don't remove them because that causes problems with references
+-- through damage/dying effects.
+function PacifistMod.hide_unused_corpses()
+    local used_corpses = {}
+
+    for _, list in pairs(data.raw) do
+        for _, entry in pairs(list) do
+            local corpse = entry.corpse
+            if corpse then
+                -- corpse is a string or array of strings
+                if type(corpse) == "string" then
+                    corpse = { corpse }
+                end
+                for _, name in pairs(corpse) do
+                    used_corpses[name] = true
+                end
+            end
+        end
+    end
+
+    for name, _ in pairs(data.raw.corpse) do
+        if not used_corpses[name] then
+            data_raw.hide('corpse', name)
+        end
+    end
+end
+
 function PacifistMod.disable_biters_in_presets()
     local presets = data.raw["map-gen-presets"]["default"]
     presets["death-world"] = nil
