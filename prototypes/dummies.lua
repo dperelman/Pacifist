@@ -9,6 +9,13 @@ local dummy_rotated_sprite = {
     filename = "__base__/graphics/entity/gate/gate-vertical.png",
     size = 1,
 }
+local dummy_attack_parameters = {
+    type = "projectile",
+    cooldown = 1,
+    range = 1,
+    ammo_type = { category = "bullet" },
+    animation = dummy_rotated_sprite,
+}
 
 local dummy_gate = {
     type = "gate",
@@ -77,11 +84,7 @@ local dummy_gun = {
     icon = "__base__/graphics/icons/tank-cannon.png",
     icon_size = 64, icon_mipmaps = 4,
     flags = { "hidden" },
-    attack_parameters = {
-        type = "projectile",
-        cooldown = 1,
-        range = 1,
-    },
+    attack_parameters = dummy_attack_parameters,
     stack_size = 1
 }
 local dummy_ammo = {
@@ -134,12 +137,7 @@ local dummy_ammo_turret = {
     inventory_size = 1,
     automated_ammo_count = 1,
     folded_animation = dummy_rotated_sprite,
-    attack_parameters = {
-        type = "projectile",
-        cooldown = 1,
-        range = 1,
-        ammo_category = "bullet",
-    },
+    attack_parameters = dummy_attack_parameters,
     call_for_help_radius = 1,
 }
 local dummy_electric_turret = {
@@ -257,13 +255,7 @@ local dummy_unit = {
         "not-repairable",
         "breaths-air"
     },
-    attack_parameters = {
-        type = "projectile",
-        cooldown = 1,
-        range = 1,
-        ammo_type = { category = "bullet" },
-        animation = dummy_rotated_sprite,
-    },
+    attack_parameters = dummy_attack_parameters,
     run_animation = dummy_rotated_sprite,
     movement_speed = 0,
     distance_per_frame = 0,
@@ -322,15 +314,69 @@ local dummy_turret = {
         "not-repairable",
         "breaths-air"
     },
-    attack_parameters = {
-        type = "projectile",
-        cooldown = 1,
-        range = 1,
-        ammo_type = { category = "bullet" }
-    },
+    attack_parameters = dummy_attack_parameters,
     folded_animation = dummy_rotated_sprite,
     call_for_help_radius = 0
 }
+
+local dummy_beam = {
+    type = "beam",
+    name = "pacifist-dummy-beam",
+    flags = { "hidden" },
+    width = 0,
+    damage_interval = 1,
+    head = dummy_rotated_sprite,
+    tail = dummy_rotated_sprite,
+    body = dummy_rotated_sprite,
+}
+
+local dummy_combat_robot = {
+    type = "combat-robot",
+    name = "pacifist-dummy-combat-robot",
+    flags = { "hidden" },
+    attack_parameters = dummy_attack_parameters,
+    time_to_live = 0,
+    idle = dummy_rotated_sprite,
+    shadow_idle = dummy_rotated_sprite,
+    in_motion = dummy_rotated_sprite,
+    shadow_in_motion = dummy_rotated_sprite,
+    speed = 0,
+}
+
+local dummy_sticker = {
+    type = "sticker",
+    name = "pacifist-dummy-sticker",
+    flags = { "hidden" },
+    duration_in_ticks = 1,
+}
+
+local dummy_stream = {
+    type = "stream",
+    name = "pacifist-dummy-stream",
+    flags = { "hidden" },
+    particle_spawn_interval = 1,
+    particle_horizontal_speed = 1,
+    particle_horizontal_speed_deviation = 0,
+    particle_vertical_acceleration = 0,
+}
+
+local dummy_artillery_flare = {
+    type = "artillery-flare",
+    name = "pacifist-dummy-artillery-flare",
+    flags = { "hidden" },
+    pictures = dummy_rotated_sprite,
+    life_time = 0,
+    map_color = { 0, 0, 0 },
+}
+
+local dummy_artillery_projectile = {
+    type = "artillery-projectile",
+    name = "pacifist-dummy-artillery-projectile",
+    flags = { "hidden" },
+    reveal_map = false,
+    map_color = { 0, 0, 0 },
+}
+
 
 local dummies = {
     dummy_gun,
@@ -346,6 +392,12 @@ local dummies = {
     dummy_unit,
     dummy_unit_spawner,
     dummy_turret,
+    dummy_beam,
+    dummy_stream,
+    dummy_combat_robot,
+    dummy_sticker,
+    dummy_artillery_flare,
+    dummy_artillery_projectile,
 }
 
 if PacifistMod.settings.remove_walls then

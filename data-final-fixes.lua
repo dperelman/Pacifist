@@ -4,6 +4,8 @@ local string = require("__Pacifist__.lib.string")
 
 local military_info = require("__Pacifist__.functions.military-info")
 
+local was_used = PacifistMod.enumerate_used_names()
+
 -- find military stuff...
 local military_item_recipes = PacifistMod.find_recipes_for(military_info.item_names)
 
@@ -22,7 +24,7 @@ PacifistMod.remove_unit_attacks()
 PacifistMod.remove_military_items(military_info.items)
 PacifistMod.remove_armor_references()
 PacifistMod.remove_misc()
-PacifistMod.hide_unused_corpses()
+--PacifistMod.hide_unused_corpses()
 
 PacifistMod.disable_biters_in_presets()
 PacifistMod.rename_item_category()
@@ -32,6 +34,8 @@ PacifistMod.disable_gun_slots()
 -- to not have some entities and items stay in the game, we instead have dummy prototypes
 local dummies = require("__Pacifist__.prototypes.dummies")
 data:extend(dummies)
+
+PacifistMod.remove_orphaned_entities(was_used)
 
 if mods["stargate"] then
     data.raw["land-mine"]["stargate-sensor"].minable = nil

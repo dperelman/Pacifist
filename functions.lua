@@ -255,6 +255,73 @@ function PacifistMod.remove_misc()
     data_raw.hide("explosion", "wall-damaged-explosion")
 end
 
+function PacifistMod.enumerate_used_names()
+    local all_names = {}
+    for _, list in pairs(data.raw) do
+        for _, entity in pairs(list) do
+            all_names[entity.name] = true
+        end
+    end
+
+    local referenced_names = {}
+
+    local function enumerate_all_strings(x)
+        --log("enumerate_all_strings: type(x)="..type(x).."; x="..tostring(x))
+        if not x then
+            return
+        elseif type(x) == "string" then
+            if all_names[x] then
+                referenced_names[x] = true
+            end
+        elseif type(x) == "table" then
+            for name, el in pairs(x) do
+                if not (name == "type") then
+                    enumerate_all_strings(name)
+                    enumerate_all_strings(el)
+                end
+            end
+        end
+    end
+
+    for _, list in pairs(data.raw) do
+        for _, entry in pairs(list) do
+            for name, value in pairs(entry) do
+                if not (name == "name" or name == "type") then
+                    enumerate_all_strings(value)
+                end
+            end
+        end
+    end
+
+    return referenced_names
+end
+
+function PacifistMod.remove_orphaned_entities(was_used)
+    --for name, _ in pairs(was_used) do
+        --log("was_used: "..name)
+    --end
+    repeat
+        local changed = false
+        local is_used = PacifistMod.enumerate_used_names()
+        --for name, _ in pairs(is_used) do
+            --log("is_used: "..name)
+        --end
+        for group, list in pairs(data.raw) do
+            -- Technologies are used even if they don't references.
+            if not (group == "technology") then
+                for name, _ in pairs(list) do
+                    if was_used[name] and not is_used[name] then
+                        log("Removing orphan: "..name)
+                        data_raw.remove(group, name)
+                        changed = true
+                    end
+                end
+            end
+        end
+        log("Finished an orphan removal pass.")
+    until not changed
+end
+
 -- Hide all corpses without references; assume they are unreferenced
 -- because a previous pass removed the entity referencing them.
 -- Don't remove them because that causes problems with references
