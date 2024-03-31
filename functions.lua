@@ -266,7 +266,6 @@ function PacifistMod.enumerate_used_names()
     local referenced_names = {}
 
     local function enumerate_all_strings(x)
-        --log("enumerate_all_strings: type(x)="..type(x).."; x="..tostring(x))
         if not x then
             return
         elseif type(x) == "string" then
@@ -297,28 +296,24 @@ function PacifistMod.enumerate_used_names()
 end
 
 function PacifistMod.remove_orphaned_entities(was_used)
-    --for name, _ in pairs(was_used) do
-        --log("was_used: "..name)
-    --end
     repeat
         local changed = false
         local is_used = PacifistMod.enumerate_used_names()
-        --for name, _ in pairs(is_used) do
-            --log("is_used: "..name)
-        --end
         for group, list in pairs(data.raw) do
             -- Technologies are used even if they don't references.
             if not (group == "technology") then
                 for name, _ in pairs(list) do
                     if was_used[name] and not is_used[name] then
-                        log("Removing orphan: "..name)
+                        log("Removing "..group.." orphan: "..name)
                         data_raw.remove(group, name)
                         changed = true
                     end
                 end
             end
         end
-        log("Finished an orphan removal pass.")
+        if changed then
+            log("Some orphans removed. Checking if anything is newly orphaned...")
+        end
     until not changed
 end
 
