@@ -24,7 +24,6 @@ PacifistMod.remove_unit_attacks()
 PacifistMod.remove_military_items(military_info.items)
 PacifistMod.remove_armor_references()
 PacifistMod.remove_misc()
---PacifistMod.hide_unused_corpses()
 
 PacifistMod.disable_biters_in_presets()
 PacifistMod.rename_item_category()
