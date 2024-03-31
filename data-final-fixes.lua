@@ -24,6 +24,7 @@ PacifistMod.remove_unit_attacks()
 PacifistMod.remove_military_items(military_info.items)
 PacifistMod.remove_armor_references()
 PacifistMod.remove_misc()
+PacifistMod.remove_orphaned_entities(was_used)
 
 PacifistMod.disable_biters_in_presets()
 PacifistMod.rename_item_category()
@@ -33,8 +34,6 @@ PacifistMod.disable_gun_slots()
 -- to not have some entities and items stay in the game, we instead have dummy prototypes
 local dummies = require("__Pacifist__.prototypes.dummies")
 data:extend(dummies)
-
-PacifistMod.remove_orphaned_entities(was_used)
 
 if mods["stargate"] then
     data.raw["land-mine"]["stargate-sensor"].minable = nil
