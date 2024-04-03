@@ -255,9 +255,25 @@ function PacifistMod.remove_misc()
     data_raw.hide("explosion", "wall-damaged-explosion")
 end
 
-function PacifistMod.enumerate_used_names()
+function PacifistMod.record_references()
+    -- When we see a name, we aren't being careful enough to know what type
+    -- that name is, so if multiple types have the same name, treat a reference
+    -- to any one of them as a reference to all of them. This may lead to not
+    -- removing something that's actually unreferenced, but won't ever result in
+    -- accidentally removing something this is referenced.
+
+    -- all_names is a map from names to all types that have that name.
     local all_names = {}
+
+    -- references[group][name]['from'][other_group][other_name]
+    -- is true (not nil) if there is a reference from data.raw[group][name]
+    -- to data.raw[other_group][other_name]. There should be a matching entry
+    -- references[other_group][other_name]['to'][group][name] which indicates
+    -- data.raw[other_group][other_name] has a reference to it
+    -- from data.raw[group][name].
     local references = {}
+
+    -- Read just the keys of data.raw to initialize those data structures.
     for group, list in pairs(data.raw) do
         local refs_for_group = {}
         references[group] = refs_for_group
@@ -276,6 +292,10 @@ function PacifistMod.enumerate_used_names()
         end
     end
 
+    -- Helper that recurses through an object x which is data.row[from_group][from_name]
+    -- or some subtree thereof and looks for any references to other objects.
+    -- Any string matching a name in all_names is assumed to be a reference to be safe.
+    -- ref_from is references[from_group][from_name].from.
     local function enumerate_all_strings(ref_from, from_group, from_name, x)
         if not x then
             return
@@ -304,6 +324,8 @@ function PacifistMod.enumerate_used_names()
                 end
             end
         elseif type(x) == "table" then
+            -- If it's a table, recurse. Some table keys reference entities,
+            -- so include keys in the strings that may be references.
             for name, el in pairs(x) do
                 if not (name == "type") then
                     enumerate_all_strings(ref_from, from_group, from_name, name)
@@ -332,28 +354,29 @@ function PacifistMod.remove_orphaned_entities(references)
         local removed = data_raw.removed
         data_raw.removed = {}
 
-        for rtype, rlist in pairs(removed) do
-            local from_type = references[rtype]
-            if from_type then
-                for rname, _ in pairs(rlist) do
-                    local refs = from_type[rname].from
-                    for ttype, tlist in pairs(refs) do
+        for rem_type, rem_list in pairs(removed) do
+            local rem_type_refs = references[rem_type]
+            if rem_type_refs then
+                for rem_name, _ in pairs(rem_list) do
+                    local refs_from_removed = rem_type_refs[rem_name].from
+                    for target_type, target_list in pairs(refs_from_removed) do
                         -- Technologies are used even if they don't have references.
-                        if not (ttype == "technology") then
-                            local to_type = references[ttype]
-                            for tname, _ in pairs(tlist) do
-                                -- Don't bother if it's already been removed.
-                                if data.raw[ttype][tname] then
-                                    local to = to_type[tname].to
-                                    local to_from_type = to[rtype]
-                                    to_from_type[rname] = nil
-                                    if next(to_from_type) == nil then
-                                        to[rtype] = nil
+                        if not (target_type == "technology") then
+                            local target_type_refs = references[target_type]
+                            for target_name, _ in pairs(target_list) do
+                                -- Only process objects that haven't been removed.
+                                if data.raw[target_type][target_name] then
+                                    local refs_to_target = target_type_refs[target_name].to
+                                    local ref_to_target_of_rem_type = refs_to_target[rem_type]
+                                    ref_to_target_of_rem_type[rem_name] = nil
+                                    if next(ref_to_target_of_rem_type) == nil then
+                                        refs_to_target[rem_type] = nil
                                     end
 
-                                    if next(to) == nil then
-                                        log("Removing "..ttype.." orphan: "..tname)
-                                        data_raw.remove(ttype, tname)
+                                    -- If there's no remaining references to the target, remove it.
+                                    if next(refs_to_target) == nil then
+                                        log("Removing "..target_type.." orphan: "..target_name)
+                                        data_raw.remove(target_type, target_name)
                                     end
                                 end
                             end
