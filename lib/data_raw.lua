@@ -1,4 +1,5 @@
 local data_raw = {}
+data_raw.removed = {}
 
 data_raw.hide = function(type, name)
     local entry = data.raw[type][name]
@@ -11,7 +12,14 @@ end
 
 data_raw.remove = function(type, name)
     if name then
-        data.raw[type][name] = nil
+        if data.raw[type][name] then
+            data.raw[type][name] = nil
+
+            log("data_raw.remove("..type..", "..name..")")
+            if not data_raw.removed[type] then data_raw.removed[type] = {} end
+            data_raw.removed[type][name] = true
+            --log("Removed: "..table.tostring(data_raw.removed))
+        end
     else
         data.raw[type] = {}
     end

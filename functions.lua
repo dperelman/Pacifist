@@ -257,64 +257,102 @@ end
 
 function PacifistMod.enumerate_used_names()
     local all_names = {}
-    for _, list in pairs(data.raw) do
+    for group, list in pairs(data.raw) do
         for _, entity in pairs(list) do
-            all_names[entity.name] = true
+            if not all_names[entity.name] then
+                all_names[entity.name] = {}
+            end
+            all_names[entity.name][group] = true
         end
     end
 
-    local referenced_names = {}
+    local references = {
+        from = {},
+        to = {},
+    }
 
-    local function enumerate_all_strings(x)
+    local function enumerate_all_strings(from, x)
         if not x then
             return
         elseif type(x) == "string" then
             if all_names[x] then
-                referenced_names[x] = true
+                local ref_from = references.from[from]
+                if not ref_from then
+                    ref_from = {}
+                    references.from[from] = ref_from
+                end
+
+                for group, _ in pairs(all_names[x]) do
+                    if not ref_from[group] then ref_from[group] = {} end
+                    ref_from[group][x] = true
+
+                    local name = group.."."..x
+                    if not references.to[name] then
+                        references.to[name] = {}
+                    end
+                    references.to[name][from] = true
+                end
             end
         elseif type(x) == "table" then
             for name, el in pairs(x) do
                 if not (name == "type") then
-                    enumerate_all_strings(name)
-                    enumerate_all_strings(el)
+                    enumerate_all_strings(from, name)
+                    enumerate_all_strings(from, el)
                 end
             end
         end
     end
 
-    for _, list in pairs(data.raw) do
-        for _, entry in pairs(list) do
+    for group, list in pairs(data.raw) do
+        for id, entry in pairs(list) do
             for name, value in pairs(entry) do
                 if not (name == "name" or name == "type") then
-                    enumerate_all_strings(value)
+                    enumerate_all_strings(group.."."..id, value)
                 end
             end
         end
     end
 
-    return referenced_names
+    return references
 end
 
-function PacifistMod.remove_orphaned_entities(was_used)
-    repeat
-        local changed = false
-        local is_used = PacifistMod.enumerate_used_names()
-        for group, list in pairs(data.raw) do
-            -- Technologies are used even if they don't references.
-            if not (group == "technology") then
-                for name, _ in pairs(list) do
-                    if was_used[name] and not is_used[name] then
-                        log("Removing "..group.." orphan: "..name)
-                        data_raw.remove(group, name)
-                        changed = true
+function PacifistMod.remove_orphaned_entities(references)
+    while not (next(data_raw.removed) == nil) do
+        local removed = data_raw.removed
+        data_raw.removed = {}
+
+        --log("Removed: "..table.tostring(removed))
+
+        for rtype, rlist in pairs(removed) do
+            --local from_type = references.from[rtype]
+            --if from_type then
+                for rname, _ in pairs(rlist) do
+                    local rfull_name = rtype.."."..rname
+                    local refs = references.from[rfull_name]
+                    references.from[rfull_name] = nil
+                    if refs then
+                        for ttype, tlist in pairs(refs) do
+                            -- Technologies are used even if they don't have references.
+                            if not (ttype == "technology") then
+                                for tname, _ in pairs(tlist) do
+                                    local to_full_name = ttype.."."..tname
+                                    local to = references.to[to_full_name]
+                                    to[rfull_name] = nil
+
+                                    if next(to) == nil then
+                                        log("Removing "..ttype.." orphan: "..tname)
+                                        references.to[to_full_name] = nil
+                                        data_raw.remove(ttype, tname)
+                                    end
+                                end
+                            end
+                        end
                     end
                 end
-            end
+            --end
         end
-        if changed then
-            log("Some orphans removed. Checking if anything is newly orphaned...")
-        end
-    until not changed
+        log("Some orphans removed. Checking if anything is newly orphaned...")
+    end
 end
 
 function PacifistMod.disable_biters_in_presets()
