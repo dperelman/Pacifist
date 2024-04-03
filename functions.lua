@@ -257,47 +257,57 @@ end
 
 function PacifistMod.enumerate_used_names()
     local all_names = {}
+    local references = {}
     for group, list in pairs(data.raw) do
+        local refs_for_group = {}
+        references[group] = refs_for_group
         for _, entity in pairs(list) do
             if not all_names[entity.name] then
                 all_names[entity.name] = {}
             end
             all_names[entity.name][group] = true
+            refs_for_group[entity.name] = {
+                -- Collection of names referenced from this entity.
+                from = {},
+                -- Collection of names with references to this entity.
+                -- If it's empty, then this entity is unreferenced and can be removed.
+                to = {},
+            }
         end
     end
 
-    local references = {
-        from = {},
-        to = {},
-    }
-
-    local function enumerate_all_strings(from, x)
+    local function enumerate_all_strings(ref_from, from_group, from_name, x)
         if not x then
             return
         elseif type(x) == "string" then
+            -- Found a string, record references from from_group.from_name to group.x
+            --  for all groups x might be in.
+            -- Record references in both directions: 
             if all_names[x] then
-                local ref_from = references.from[from]
-                if not ref_from then
-                    ref_from = {}
-                    references.from[from] = ref_from
-                end
-
                 for group, _ in pairs(all_names[x]) do
-                    if not ref_from[group] then ref_from[group] = {} end
-                    ref_from[group][x] = true
-
-                    local name = group.."."..x
-                    if not references.to[name] then
-                        references.to[name] = {}
+                    -- Record reference from from_group.from_name to group.x.
+                    local ref_from_group = ref_from[group]
+                    if not ref_from_group then
+                        ref_from_group = {}
+                        ref_from[group] = ref_from_group
                     end
-                    references.to[name][from] = true
+                    ref_from_group[x] = true
+
+                    -- Record reference to group.x from from_group.from_name.
+                    local ref_to = references[group][x].to
+                    local ref_to_group = ref_to[from_group]
+                    if not ref_to_group then
+                        ref_to_group = {}
+                        ref_to[from_group] = ref_to_group
+                    end
+                    ref_to_group[from_name] = true
                 end
             end
         elseif type(x) == "table" then
             for name, el in pairs(x) do
                 if not (name == "type") then
-                    enumerate_all_strings(from, name)
-                    enumerate_all_strings(from, el)
+                    enumerate_all_strings(ref_from, from_group, from_name, name)
+                    enumerate_all_strings(ref_from, from_group, from_name, el)
                 end
             end
         end
@@ -307,7 +317,8 @@ function PacifistMod.enumerate_used_names()
         for id, entry in pairs(list) do
             for name, value in pairs(entry) do
                 if not (name == "name" or name == "type") then
-                    enumerate_all_strings(group.."."..id, value)
+                    local ref_from = references[group][id].from
+                    enumerate_all_strings(ref_from, group, id, value)
                 end
             end
         end
@@ -321,27 +332,27 @@ function PacifistMod.remove_orphaned_entities(references)
         local removed = data_raw.removed
         data_raw.removed = {}
 
-        --log("Removed: "..table.tostring(removed))
-
         for rtype, rlist in pairs(removed) do
-            --local from_type = references.from[rtype]
-            --if from_type then
+            local from_type = references[rtype]
+            if from_type then
                 for rname, _ in pairs(rlist) do
-                    local rfull_name = rtype.."."..rname
-                    local refs = references.from[rfull_name]
-                    references.from[rfull_name] = nil
-                    if refs then
-                        for ttype, tlist in pairs(refs) do
-                            -- Technologies are used even if they don't have references.
-                            if not (ttype == "technology") then
-                                for tname, _ in pairs(tlist) do
-                                    local to_full_name = ttype.."."..tname
-                                    local to = references.to[to_full_name]
-                                    to[rfull_name] = nil
+                    local refs = from_type[rname].from
+                    for ttype, tlist in pairs(refs) do
+                        -- Technologies are used even if they don't have references.
+                        if not (ttype == "technology") then
+                            local to_type = references[ttype]
+                            for tname, _ in pairs(tlist) do
+                                -- Don't bother if it's already been removed.
+                                if data.raw[ttype][tname] then
+                                    local to = to_type[tname].to
+                                    local to_from_type = to[rtype]
+                                    to_from_type[rname] = nil
+                                    if next(to_from_type) == nil then
+                                        to[rtype] = nil
+                                    end
 
                                     if next(to) == nil then
                                         log("Removing "..ttype.." orphan: "..tname)
-                                        references.to[to_full_name] = nil
                                         data_raw.remove(ttype, tname)
                                     end
                                 end
@@ -349,7 +360,7 @@ function PacifistMod.remove_orphaned_entities(references)
                         end
                     end
                 end
-            --end
+            end
         end
         log("Some orphans removed. Checking if anything is newly orphaned...")
     end

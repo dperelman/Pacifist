@@ -15,9 +15,13 @@ data_raw.remove = function(type, name)
         if data.raw[type][name] then
             data.raw[type][name] = nil
 
-            log("data_raw.remove("..type..", "..name..")")
-            if not data_raw.removed[type] then data_raw.removed[type] = {} end
-            data_raw.removed[type][name] = true
+            --log("data_raw.remove("..type..", "..name..")")
+            local removed_type = data_raw.removed[type]
+            if not removed_type then
+                removed_type = {}
+                data_raw.removed[type] = removed_type
+            end
+            removed_type[name] = true
             --log("Removed: "..table.tostring(data_raw.removed))
         end
     else
